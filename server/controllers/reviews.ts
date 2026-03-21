@@ -25,9 +25,44 @@ export const postReview = async (req: Request, res: Response) => {
       [avgRating, totalReviews, merchantId]
     );
 
+    // Get updated merchant data
+    const [merchantRows]: any = await pool.execute(
+      'SELECT * FROM merchants WHERE id = ?',
+      [merchantId]
+    );
+
+    const updatedMerchant = merchantRows[0];
+
+    // Get the newly created review with user info
+    const [newReviewRows]: any = await pool.execute(
+      'SELECT r.*, u.name as user_name, u.avatar_url FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = ?',
+      [result.insertId]
+    );
+
+    const newReview = newReviewRows[0];
+    if (newReview && typeof newReview.images === 'string') {
+      try {
+        newReview.images = JSON.parse(newReview.images);
+      } catch (e) {
+        newReview.images = [];
+      }
+    }
+
     res.status(201).json({
       message: 'Review posted successfully',
-      data: { id: result.insertId, userId, merchantId, rating, content, images },
+      data: { 
+        id: result.insertId, 
+        userId, 
+        merchantId, 
+        rating, 
+        content, 
+        images 
+      },
+      merchant: {
+        avg_rating: avgRating,
+        review_count: totalReviews
+      },
+      review: newReview
     });
   } catch (error: any) {
     res.status(500).json({ message: 'Server error', error: error.message });

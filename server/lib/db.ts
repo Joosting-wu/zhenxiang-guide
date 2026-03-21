@@ -115,7 +115,8 @@ async function getDb() {
         await db.exec(`
           INSERT INTO users (email, password_hash, name, role, avatar_url) VALUES
           ('user@example.com', '${defaultPasswordHash}', '普通用户', 'user', 'https://api.dicebear.com/7.x/notionists/svg?seed=user1&backgroundColor=ffd5dc'),
-          ('merchant@example.com', '${defaultPasswordHash}', '商家老板', 'merchant', 'https://api.dicebear.com/7.x/notionists/svg?seed=merchant1&backgroundColor=ffdfbf');
+          ('merchant@example.com', '${defaultPasswordHash}', '商家老板', 'merchant', 'https://api.dicebear.com/7.x/notionists/svg?seed=merchant1&backgroundColor=ffdfbf'),
+          ('admin@example.com', '${defaultPasswordHash}', '管理员', 'admin', 'https://api.dicebear.com/7.x/notionists/svg?seed=admin&backgroundColor=b6e3f4');
         `);
       }
 

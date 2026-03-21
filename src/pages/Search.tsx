@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Row, Col, Card, Rate, Spin, Empty, Select, message, Tag, Button } from 'antd';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import axios from 'axios';
@@ -52,10 +52,47 @@ const Search: React.FC = () => {
   const [animatingFavId, setAnimatingFavId] = useState<number | null>(null);
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const keyword = searchParams.get('keyword') || '';
   const categoryId = searchParams.get('category') || '';
   const sort = searchParams.get('sort') || 'newest';
+
+  const fetchMerchants = useCallback(async () => {
+    setLoading(true);
+    try {
+      const headers = user?.token ? { Authorization: `Bearer ${user.token}` } : {};
+      const response = await axios.get('/api/merchants', {
+        headers,
+        params: {
+          keyword,
+          category: categoryId,
+          sort: sort === 'rating' ? 'rating' : 'newest',
+          city: currentCity,
+          limit: 100
+        }
+      });
+
+      const merchantsWithImages = response.data.data.map((m: Merchant) => {
+        let imageUrl = getFallbackImage(m.category_name);
+        try {
+          if (m.images) {
+            const images = typeof m.images === 'string' ? JSON.parse(m.images) : m.images;
+            if (Array.isArray(images) && images.length > 0) {
+              imageUrl = images[0];
+            }
+          }
+        } catch (e) {}
+        return { ...m, image_url: imageUrl };
+      });
+
+      setMerchants(merchantsWithImages);
+    } catch (error) {
+      message.error('搜索失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryId, currentCity, keyword, sort, user?.token]);
 
   useEffect(() => {
     const handleCityChange = () => {
@@ -78,44 +115,16 @@ const Search: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const fetchMerchants = async () => {
-      setLoading(true);
-      try {
-        const headers = user?.token ? { Authorization: `Bearer ${user.token}` } : {};
-        const response = await axios.get('/api/merchants', {
-          headers,
-          params: {
-            keyword,
-            category: categoryId,
-            sort: sort === 'rating' ? 'rating' : 'newest',
-            city: currentCity,
-            limit: 100 // Request a large enough limit to show all merchants
-          }
-        });
-        
-        const merchantsWithImages = response.data.data.map((m: Merchant) => {
-          let imageUrl = getFallbackImage(m.category_name);
-          try {
-            if (m.images) {
-              const images = typeof m.images === 'string' ? JSON.parse(m.images) : m.images;
-              if (Array.isArray(images) && images.length > 0) {
-                imageUrl = images[0];
-              }
-            }
-          } catch (e) {}
-          return { ...m, image_url: imageUrl };
-        });
-
-        setMerchants(merchantsWithImages);
-      } catch (error) {
-        message.error('搜索失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMerchants();
-  }, [keyword, categoryId, sort, currentCity]);
+  }, [fetchMerchants]);
+
+  // Refresh data when returning from merchant detail page
+  useEffect(() => {
+    // Check if we navigated back from a merchant detail page
+    if (document.referrer && document.referrer.includes('/merchant/')) {
+      fetchMerchants();
+    }
+  }, [location.key]);
 
   const handleCategoryChange = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -144,7 +153,11 @@ const Search: React.FC = () => {
       });
       const isFav = response.data.is_favorite;
       setMerchants(prev => prev.map(m => 
-        m.id === merchantId ? { ...m, is_favorite: isFav } : m
+        m.id === merchantId ? { 
+          ...m, 
+          is_favorite: isFav,
+          total_favorites: isFav ? (m.total_favorites || 0) + 1 : Math.max(0, (m.total_favorites || 0) - 1)
+        } : m
       ));
       
       if (isFav) {
@@ -208,7 +221,7 @@ const Search: React.FC = () => {
       ) : merchants.length > 0 ? (
         <Row gutter={[24, 24]}>
           {merchants.map((merchant) => (
-            <Col key={merchant.id} xs={24} sm={12} md={8} lg={6}>
+            <Col key={merchant.id} xs={24} sm={12} md={8} lg={9}>
               <Link to={`/merchant/${merchant.id}`}>
                 <Card
                   hoverable

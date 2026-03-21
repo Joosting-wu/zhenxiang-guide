@@ -117,7 +117,7 @@ const MerchantDetail: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await axios.post('/api/reviews', {
+      const response = await axios.post('/api/reviews', {
         merchantId: id,
         rating: values.rating,
         content: values.content,
@@ -129,7 +129,30 @@ const MerchantDetail: React.FC = () => {
       setSelectedRating(0);
       setHoverRating(0);
       setShowReviewForm(false);
-      fetchData();
+      
+      // Update merchant data with new review count and rating
+      if (response.data.merchant && data) {
+        const updatedData = {
+          ...data,
+          merchant: {
+            ...data.merchant,
+            avg_rating: response.data.merchant.avg_rating,
+            review_count: response.data.merchant.review_count
+          }
+        };
+        
+        // Add the new review to the recent comments list
+        if (response.data.review) {
+          updatedData.recentComments = [response.data.review, ...data.recentComments];
+        }
+        
+        setData(updatedData);
+      }
+      
+      // Refresh all data to ensure consistency
+      setTimeout(() => {
+        fetchData();
+      }, 100);
     } catch (error) {
       message.error('评论失败，请稍后重试');
     } finally {
@@ -322,7 +345,7 @@ const MerchantDetail: React.FC = () => {
               <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Form.Item 
                   name="rating" 
-                  label={<span className="font-medium text-gray-700">有多香</span>} 
+                  label={<span className="font-medium text-gray-700">真香指数</span>} 
                   rules={[{ required: true, message: '请给商户打分' }]}
                   className="mb-6"
                 >
@@ -383,7 +406,7 @@ const MerchantDetail: React.FC = () => {
           <List
             itemLayout="horizontal"
             dataSource={displayedComments}
-            locale={{ emptyText: '暂无评价，快来抢沙发吧！' }}
+            locale={{ emptyText: '暂无真香现场，快来抢沙发吧！' }}
             renderItem={(review) => (
               <List.Item className="bg-white p-6 md:p-8 rounded-2xl mb-6 shadow-sm border border-gray-100 items-center hover:shadow-md transition-shadow">
                 <div className="w-full flex flex-row gap-4 md:gap-8 items-center">
@@ -479,7 +502,7 @@ const MerchantDetail: React.FC = () => {
           {!needLogin && merchant.review_count > 3 && !showAllReviews && (
             <div className="text-center mt-8 mb-8">
               <Button type="default" className="text-orange-500 border-orange-500 rounded-full px-8 py-2 h-auto" onClick={() => setShowAllReviews(true)}>
-                查看更多评价 (共 {merchant.review_count} 条)
+                查看更多真香现场 (共 {merchant.review_count} 个)
               </Button>
             </div>
           )}

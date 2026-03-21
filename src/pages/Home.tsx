@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Rate, Spin, Empty, message, Alert, Button } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { MapPin } from 'lucide-react';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
@@ -49,8 +49,16 @@ const Home: React.FC = () => {
   const [isCityCenter, setIsCityCenter] = useState<boolean>(true);
   const [animatingFavId, setAnimatingFavId] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [ratingRowWidth, setRatingRowWidth] = useState<number | null>(null);
+  const [ratingRowWidthBaseline, setRatingRowWidthBaseline] = useState<number | null>(null);
+  const [hasHorizontalScroll, setHasHorizontalScroll] = useState(false);
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const layoutMode = (searchParams.get('layout') || 'new').toLowerCase();
+  const debugWidth = searchParams.get('debugWidth') === '1';
 
   const fetchData = async (city: string, categoryId?: number | null) => {
     setLoading(true);
@@ -115,6 +123,38 @@ const Home: React.FC = () => {
     return () => window.removeEventListener('cityChange', handleCityChange);
   }, []);
 
+  useEffect(() => {
+    if (!debugWidth) return;
+
+    const update = () => {
+      const el = document.querySelector('[data-rating-row]') as HTMLElement | null;
+      const width = el ? el.getBoundingClientRect().width : null;
+      setRatingRowWidth(width);
+
+      if (width && layoutMode === 'old') {
+        sessionStorage.setItem('ratingRowWidthBaseline', String(width));
+      }
+
+      const baseline = Number(sessionStorage.getItem('ratingRowWidthBaseline') || '0');
+      setRatingRowWidthBaseline(baseline > 0 ? baseline : null);
+
+      const root = document.documentElement;
+      setHasHorizontalScroll(root.scrollWidth > root.clientWidth);
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [debugWidth, merchants.length, layoutMode]);
+
+  // Refresh data when returning from merchant detail page
+  useEffect(() => {
+    // Check if we navigated back from a merchant detail page
+    if (document.referrer && document.referrer.includes('/merchant/')) {
+      fetchData(currentCity, activeCategory);
+    }
+  }, [location.key]);
+
   const handleToggleFavorite = async (e: React.MouseEvent, merchantId: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -129,7 +169,11 @@ const Home: React.FC = () => {
       });
       const isFav = response.data.is_favorite;
       setMerchants(prev => prev.map(m => 
-        m.id === merchantId ? { ...m, is_favorite: isFav } : m
+        m.id === merchantId ? { 
+          ...m, 
+          is_favorite: isFav,
+          total_favorites: isFav ? (m.total_favorites || 0) + 1 : Math.max(0, (m.total_favorites || 0) - 1)
+        } : m
       ));
       
       if (isFav) {
@@ -188,7 +232,17 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+    <div className="max-w-[100rem] mx-auto px-2 py-8 flex-grow w-full overflow-x-hidden">
+      {debugWidth && (
+        <div className="mb-4 bg-white border border-gray-100 rounded-lg px-3 py-2 text-xs text-gray-600 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>layout={layoutMode}</span>
+          <span>ratingDivWidth={ratingRowWidth ? `${Math.round(ratingRowWidth)}px` : '--'}</span>
+          <span>baseline={ratingRowWidthBaseline ? `${Math.round(ratingRowWidthBaseline)}px` : '--'}</span>
+          <span>ratio={ratingRowWidth && ratingRowWidthBaseline ? `${(ratingRowWidth / ratingRowWidthBaseline).toFixed(2)}x` : '--'}</span>
+          <span>horizontalScroll={hasHorizontalScroll ? 'yes' : 'no'}</span>
+          <span className="text-gray-400">用 ?layout=old 或 ?layout=new 切换；用 ?debugWidth=1 显示测量</span>
+        </div>
+      )}
       {/* Location Bar */}
       <div className="flex items-center text-sm text-gray-600 mb-6 bg-orange-50 p-3 rounded-lg border border-orange-100">
         <MapPin size={16} className="text-orange-500 mr-2" />
@@ -233,15 +287,15 @@ const Home: React.FC = () => {
         </div>
 
         {merchants.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12 mb-8">
             {merchants.map(merchant => (
               <Link 
                 to={`/merchant/${merchant.id}`}
                 key={merchant.id} 
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex"
+                className={`bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer ${layoutMode === 'old' ? 'flex' : 'flex flex-col sm:flex-row'}`}
               >
                 {/* Left side: Image */}
-                <div className="w-2/5 h-48 relative flex-shrink-0">
+                <div className={`${layoutMode === 'old' ? 'w-2/5' : 'w-full sm:w-2/5'} h-48 relative flex-shrink-0`}>
                   <img 
                     src={merchant.image_url} 
                     alt={merchant.name}
@@ -253,10 +307,10 @@ const Home: React.FC = () => {
                 </div>
                 
                 {/* Right side: Content */}
-                <div className="w-3/5 p-4 flex flex-col justify-between">
+                <div className={`${layoutMode === 'old' ? 'w-3/5' : 'w-full sm:w-3/5'} p-4 flex flex-col justify-between`}>
                   <div>
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className={layoutMode === 'old' ? '' : 'flex-1 min-w-0'}>
                         <h3 className="text-lg font-bold text-gray-800 mb-1 truncate pr-2">
                           {merchant.name}
                           {user?.role === 'merchant' && user?.userId === merchant.owner_id && (
@@ -273,7 +327,7 @@ const Home: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className={`flex flex-nowrap items-center gap-2 mb-2 whitespace-nowrap ${layoutMode === 'old' ? '' : 'w-full'}`} data-rating-row>
                           <Rate disabled value={Number(merchant.avg_rating)} allowHalf className="text-sm text-orange-400" />
                           <span className="text-gray-500 text-sm font-medium">{Number(merchant.avg_rating).toFixed(1)}分</span>
                           <span className="text-orange-500 font-bold text-xs ml-1">

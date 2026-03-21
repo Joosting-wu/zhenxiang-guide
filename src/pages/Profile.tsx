@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Avatar, Button, Form, Input, message, Tabs, List, Rate, Tag } from 'antd';
-import { UserOutlined, EditOutlined } from '@ant-design/icons';
+import { Card, Avatar, Button, Form, Input, message, Tabs, List, Rate } from 'antd';
+import { UserOutlined, EditOutlined, HeartOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -77,7 +77,22 @@ const Profile: React.FC = () => {
     <List
       loading={loadingFavs}
       dataSource={favorites}
-      locale={{ emptyText: '暂无收藏，快去探索吧！' }}
+      className="w-full"
+      locale={{ 
+        emptyText: (
+          <div className="text-center py-12 w-full flex flex-col items-center justify-center">
+            <div className="text-gray-400 mb-4">暂无收藏，快去探索吧！</div>
+            <Button 
+              type="primary" 
+              icon={<HeartOutlined />}
+              onClick={() => navigate('/')}
+              className="bg-orange-500 border-none rounded-full px-6"
+            >
+              探测真相预警
+            </Button>
+          </div>
+        )
+      }}
       renderItem={(item) => {
         let imageUrl = 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=Modern+restaurant+app+logo+orange+and+white+minimalist&image_size=square';
         try {
@@ -89,27 +104,43 @@ const Profile: React.FC = () => {
 
         return (
           <List.Item className="bg-white mb-4 rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all">
-            <Link to={`/merchant/${item.id}`} className="flex w-full gap-6 text-gray-800 hover:text-gray-800">
-              <img src={imageUrl} alt={item.name} className="w-32 h-32 object-cover rounded-lg flex-shrink-0" />
-              <div className="flex-1 flex flex-col justify-between py-1">
+            <Link to={`/merchant/${item.id}`} className="flex flex-col sm:flex-row w-full gap-4 sm:gap-6 text-gray-800 hover:text-gray-800">
+              <div className="w-full sm:w-2/5 h-48 sm:h-48 flex-shrink-0 relative">
+                <img src={imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+              </div>
+              <div className="flex-1 sm:w-3/5 flex flex-col justify-between py-1 overflow-hidden">
                 <div>
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-bold m-0">{item.name}</h3>
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="text-lg font-bold m-0 truncate" title={item.name}>{item.name}</h3>
                     {item.status && (
-                      <span className={`px-2 py-0.5 rounded text-xs inline-block text-white ${item.status === '营业' || item.status === '营业中' ? 'bg-orange-500' : item.status === '休息' || item.status === '休息中' ? 'bg-[#fdba74]' : 'bg-[#6b7280]'}`}>
+                      <span className={`flex-shrink-0 px-2 py-0.5 rounded text-xs inline-block text-white ${item.status === '营业' || item.status === '营业中' ? 'bg-orange-500' : item.status === '休息' || item.status === '休息中' ? 'bg-[#fdba74]' : 'bg-[#6b7280]'}`}>
                         {item.status === '营业中' ? '营业' : item.status === '休息中' ? '休息' : item.status}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1 mb-2">
-                    <span className="bg-orange-50 text-orange-500 px-2 py-0.5 rounded mr-2">{item.category_name}</span>
-                    <span>{item.city}</span>
+                  <div className="text-xs text-gray-500 mt-1.5 mb-2 flex items-center flex-wrap gap-2">
+                    <span className="bg-orange-50 text-orange-500 px-2 py-0.5 rounded">{item.category_name}</span>
+                    <span className="text-gray-400">{item.city}</span>
                   </div>
+                  {item.description && (
+                    <p className="text-sm text-gray-500 line-clamp-2 mt-2 mb-0">
+                      {item.description}
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Rate disabled value={Number(item.avg_rating)} allowHalf className="text-xs text-orange-400" />
-                  <span className="text-sm font-medium">{Number(item.avg_rating).toFixed(1)}分</span>
-                  <span className="text-xs text-gray-400 ml-2">{item.review_count}条评价</span>
+                <div className="flex flex-col items-start gap-2 mt-3 pt-3 border-t border-gray-50">
+                  <div className="flex flex-nowrap items-center gap-2 w-full whitespace-nowrap">
+                    <Rate disabled value={Number(item.avg_rating)} allowHalf className="text-sm text-orange-400" />
+                    <span className="text-gray-500 text-sm font-medium">{Number(item.avg_rating).toFixed(1)}分</span>
+                    <span className="text-orange-500 font-bold text-xs ml-1">
+                      {Number(item.avg_rating) >= 4.5 ? '太香了！' : Number(item.avg_rating) >= 4.0 ? '真香！' : '还行'}
+                    </span>
+                  </div>
+                  <div className="flex w-full items-center justify-between mt-1">
+                    <span className="text-gray-400 text-xs">
+                      <span className="text-orange-500 font-bold">{item.review_count}</span>个真香现场
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>
@@ -125,11 +156,11 @@ const Profile: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="md:flex gap-8">
         {/* Left column: Profile Info */}
-        <div className="md:w-1/4 mb-8 md:mb-0">
+        <div className="md:w-1/3 mb-8 md:mb-0">
           <Card className="rounded-2xl shadow-sm border-none text-center sticky top-8">
             <div className="flex flex-col items-center">
               <Avatar 
-                size={100} 
+                size={80} 
                 src={user.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${user.name}&backgroundColor=ffd5dc`} 
                 icon={<UserOutlined />} 
                 className="mb-4 shadow-md"
@@ -138,11 +169,15 @@ const Profile: React.FC = () => {
               {!isEditing ? (
                 <>
                   <h2 className="text-xl font-bold mb-1">{user.name}</h2>
-                  <p className="text-gray-500 mb-4">{user.role === 'merchant' ? '商家用户' : '普通用户'}</p>
+                  <p className="text-gray-500 mb-1">{user.role === 'merchant' ? '商家用户' : '普通用户'}</p>
+                  <p className="text-gray-400 text-xs mb-4">
+                    注册于：{user.created_at ? new Date(user.created_at).toLocaleDateString('zh-CN') : '近期'}
+                  </p>
                   <Button 
                     icon={<EditOutlined />} 
                     onClick={() => setIsEditing(true)}
                     className="rounded-full border-orange-500 text-orange-500 hover:bg-orange-50"
+                    size="small"
                   >
                     编辑资料
                   </Button>
@@ -170,14 +205,14 @@ const Profile: React.FC = () => {
         </div>
 
         {/* Right column: Content Tabs */}
-        <div className="md:w-3/4">
+        <div className="md:w-2/3">
           <Card className="rounded-2xl shadow-sm border-none min-h-[500px]">
             <Tabs 
               defaultActiveKey="1" 
               items={[
                 {
                   key: '1',
-                  label: <span className="text-base px-2">❤️ 我的真香预警</span>,
+                  label: <span className="text-base px-2">❤️ 我的真香预警（{favorites.length}）</span>,
                   children: renderFavorites(),
                 }
               ]} 
