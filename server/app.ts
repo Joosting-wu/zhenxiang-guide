@@ -17,6 +17,7 @@ import reviewRoutes from './routes/reviews.js'
 import uploadRoutes from './routes/upload.js'
 import userRoutes from './routes/users.js'
 import adminRoutes from './routes/admin.js'
+import pool from './lib/db.js'
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url)
@@ -36,6 +37,28 @@ const uploadDir = isVercel ? '/tmp/uploads' : path.join(__dirname, '../uploads')
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(uploadDir))
+
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
+  res.setHeader('Pragma', 'no-cache')
+  res.setHeader('Expires', '0')
+  next()
+})
+
+app.get('/api/db-health', async (req: Request, res: Response) => {
+  try {
+    const [rows]: any = await pool.execute('SELECT NOW() as now')
+    res.status(200).json({
+      ok: true,
+      now: rows?.[0]?.now,
+    })
+  } catch (error: any) {
+    res.status(500).json({
+      ok: false,
+      error: error?.message || 'DB error',
+    })
+  }
+})
 
 /**
  * API Routes

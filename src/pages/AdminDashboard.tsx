@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Col, Row, Statistic, Spin, message, Typography, Table, Tag, Tabs } from 'antd';
+import { Button, Card, Col, Row, Statistic, Spin, message, Typography, Table, Tag, Tabs } from 'antd';
 import { UserOutlined, ShopOutlined, ArrowUpOutlined, EyeOutlined, GlobalOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import axios from 'axios';
@@ -85,6 +85,14 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const refreshAll = async () => {
+    await Promise.all([
+      fetchDashboardData(),
+      fetchUsers(1, usersPagination.pageSize),
+      fetchMerchants(1, merchantsPagination.pageSize),
+    ])
+  }
+
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       message.error('无权访问');
@@ -109,7 +117,15 @@ const AdminDashboard: React.FC = () => {
       fetchDashboardData();
     }, 3600000);
 
-    return () => clearInterval(interval);
+    const listInterval = setInterval(() => {
+      fetchUsers(1, usersPagination.pageSize)
+      fetchMerchants(1, merchantsPagination.pageSize)
+    }, 30000)
+
+    return () => {
+      clearInterval(interval)
+      clearInterval(listInterval)
+    };
   }, [user, navigate]);
 
   const userColumns = [
@@ -212,8 +228,13 @@ const AdminDashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <Title level={2} style={{ margin: 0 }}>我的真香后台</Title>
-        <div className="text-gray-500">
-          最后更新时间: {new Date(data.lastUpdated).toLocaleString('zh-CN')}
+        <div className="flex items-center gap-3">
+          <div className="text-gray-500">
+            最后更新时间: {new Date(data.lastUpdated).toLocaleString('zh-CN')}
+          </div>
+          <Button onClick={refreshAll} className="rounded-full">
+            刷新
+          </Button>
         </div>
       </div>
 

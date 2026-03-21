@@ -176,6 +176,10 @@ const Home: React.FC = () => {
           total_favorites: isFav ? (m.total_favorites || 0) + 1 : Math.max(0, (m.total_favorites || 0) - 1)
         } : m
       ));
+
+      window.dispatchEvent(new CustomEvent('favoriteChanged', {
+        detail: { merchantId, isFavorite: isFav }
+      }))
       
       if (isFav) {
         message.success({ content: '😍 我真香了！', key: 'fav-toast' });

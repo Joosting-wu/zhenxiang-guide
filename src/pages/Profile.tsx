@@ -44,6 +44,17 @@ const Profile: React.FC = () => {
     fetchFavorites();
   }, [user, navigate, form]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const onFavoriteChanged = () => {
+      fetchFavorites();
+    };
+
+    window.addEventListener('favoriteChanged', onFavoriteChanged as EventListener);
+    return () => window.removeEventListener('favoriteChanged', onFavoriteChanged as EventListener);
+  }, [user]);
+
   const fetchFavorites = async () => {
     setLoadingFavs(true);
     try {

@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Env
+.env
+.env.*
+!.env.example
+
+# Local data
+database.sqlite
+*.sqlite
+*.db
+
+# Uploads
+uploads/
+
+# Trae IDE
+.trae/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

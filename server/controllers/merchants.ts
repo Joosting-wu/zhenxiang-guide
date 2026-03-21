@@ -45,7 +45,7 @@ export const getMerchants = async (req: Request, res: Response) => {
     query += ' LIMIT ? OFFSET ?';
     queryParams.push(parseInt(limit as string), offset);
 
-    const [rows] = await pool.execute(query, queryParams);
+    const [rows]: any = await pool.execute(query, queryParams);
     
     // Auto-fill logic for "Featured" (Home page)
     if (rows.length < 9 && sort === 'rating' && !keyword && !category) {

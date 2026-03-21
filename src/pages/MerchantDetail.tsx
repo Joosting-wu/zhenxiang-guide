@@ -210,6 +210,10 @@ const MerchantDetail: React.FC = () => {
           }
         };
       });
+
+      window.dispatchEvent(new CustomEvent('favoriteChanged', {
+        detail: { merchantId: id, isFavorite: isFav }
+      }))
       if (isFav) {
         message.success({ content: '😍 我真香了！', key: 'fav-toast' });
         setAnimatingFav(true);

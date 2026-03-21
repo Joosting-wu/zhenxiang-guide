@@ -12,12 +12,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     // Calculate real new users/merchants for today from DB
     const [newUsersRows]: any = await pool.execute(
-      "SELECT COUNT(*) as count FROM users WHERE date(created_at) = date('now')"
+      "SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = CURRENT_DATE"
     );
     const newUsersToday = newUsersRows[0].count;
 
     const [newMerchantsRows]: any = await pool.execute(
-      "SELECT COUNT(*) as count FROM merchants WHERE date(created_at) = date('now')"
+      "SELECT COUNT(*) as count FROM merchants WHERE DATE(created_at) = CURRENT_DATE"
     );
     const newMerchantsToday = newMerchantsRows[0].count;
 
@@ -39,13 +39,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       
       // Get count of users created on or before this date
       const [histUserRows]: any = await pool.execute(
-        "SELECT COUNT(*) as count FROM users WHERE date(created_at) <= date(?)",
+        "SELECT COUNT(*) as count FROM users WHERE DATE(created_at) <= CAST(? AS DATE)",
         [isoDate]
       );
-      
+
       // Get count of merchants created on or before this date
       const [histMerchantRows]: any = await pool.execute(
-        "SELECT COUNT(*) as count FROM merchants WHERE date(created_at) <= date(?)",
+        "SELECT COUNT(*) as count FROM merchants WHERE DATE(created_at) <= CAST(? AS DATE)",
         [isoDate]
       );
       
