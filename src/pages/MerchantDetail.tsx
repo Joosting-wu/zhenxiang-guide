@@ -235,19 +235,19 @@ const MerchantDetail: React.FC = () => {
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Merchant Info Card */}
       <Card className="mb-8 border border-gray-100 shadow-sm overflow-hidden rounded-2xl" bodyStyle={{ padding: 0 }}>
-        <div className="md:flex">
-          <div className="md:w-[400px] flex-shrink-0 bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col md:flex-row">
+          {/* Fixed aspect ratio container for the main image */}
+          <div className="w-full md:w-[400px] h-[240px] md:h-auto flex-shrink-0 bg-gray-50 relative overflow-hidden" style={{ minHeight: '320px' }}>
             <img 
               src={(Array.isArray(merchant.images) && merchant.images.length > 0) ? merchant.images[0] : getFallbackImage(merchant.category_name)} 
               alt={merchant.name} 
-              className="w-full h-full object-cover" 
-              style={{ minHeight: '300px' }}
+              className="w-full h-full object-cover absolute inset-0" 
               onError={(e) => {
                 (e.target as HTMLImageElement).src = getFallbackImage(merchant.category_name);
               }}
             />
           </div>
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 flex flex-col min-w-0" style={{ minHeight: '320px' }}>
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-800 flex items-start gap-3 mb-2">

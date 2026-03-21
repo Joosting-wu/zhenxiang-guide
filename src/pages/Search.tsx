@@ -220,7 +220,7 @@ const Search: React.FC = () => {
       ) : merchants.length > 0 ? (
         <Row gutter={[24, 24]}>
           {merchants.map((merchant) => (
-            <Col key={merchant.id} xs={24} sm={12} md={8} lg={9}>
+            <Col key={merchant.id} xs={24} sm={12} md={8} lg={8}>
               <Link to={`/merchant/${merchant.id}`}>
                 <Card
                   hoverable
