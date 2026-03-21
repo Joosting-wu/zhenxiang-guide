@@ -26,6 +26,7 @@ interface Merchant {
 
 interface Review {
   id: number;
+  user_id: number;
   user_name: string;
   avatar_url: string;
   rating: number;
@@ -87,12 +88,24 @@ const MerchantDetail: React.FC = () => {
       const response = await axios.get(`/api/merchants/${id}`, { headers });
       
       const resData = response.data;
-      if (resData.merchant && typeof resData.merchant.images === 'string') {
-        try {
-          const parsed = JSON.parse(resData.merchant.images);
-          resData.merchant.images = Array.isArray(parsed) ? parsed : [resData.merchant.images];
-        } catch (e) {
-          resData.merchant.images = [resData.merchant.images];
+      
+      // The images might be a JSON string from DB, or already parsed
+      if (resData.merchant) {
+        if (typeof resData.merchant.images === 'string') {
+          try {
+            const parsed = JSON.parse(resData.merchant.images);
+            resData.merchant.images = Array.isArray(parsed) ? parsed : [resData.merchant.images];
+          } catch (e) {
+            // If it's not valid JSON, it might just be a raw URL string
+            if (resData.merchant.images.trim() !== '') {
+              resData.merchant.images = [resData.merchant.images];
+            } else {
+              resData.merchant.images = [];
+            }
+          }
+        } else if (!Array.isArray(resData.merchant.images)) {
+          // If it's neither string nor array, make it an empty array
+          resData.merchant.images = [];
         }
       }
       
@@ -413,14 +426,19 @@ const MerchantDetail: React.FC = () => {
                   <div className="flex-shrink-0 ml-4 md:ml-6">
                     <Avatar 
                       size={56} 
-                      src={review.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${review.user_name}&backgroundColor=ffd5dc,ffdfbf`} 
+                      src={review.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(review.user_name || 'user')}&backgroundColor=ffd5dc,ffdfbf`} 
                       icon={<UserOutlined />} 
                       className="mt-0 shadow-sm border border-gray-50"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center pr-2 mb-0">
-                      <span className="font-bold text-lg text-gray-800 flex-shrink-0">{review.user_name || '我是大食家'}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-bold text-lg text-gray-800">{review.user_name || '我是大食家'}</span>
+                        {user && user.userId === review.user_id && (
+                          <span className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full font-medium">我</span>
+                        )}
+                      </div>
                       <span className="text-gray-400 text-sm flex-shrink-0">
                         {new Date(review.created_at).toLocaleString('zh-CN', {
                           year: 'numeric',

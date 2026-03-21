@@ -118,13 +118,12 @@ const Search: React.FC = () => {
     fetchMerchants();
   }, [fetchMerchants]);
 
-  // Refresh data when returning from merchant detail page
+  // Refresh data when returning from other pages
   useEffect(() => {
-    // Check if we navigated back from a merchant detail page
-    if (document.referrer && document.referrer.includes('/merchant/')) {
-      fetchMerchants();
-    }
-  }, [location.key]);
+    // We always want to fetch fresh data when component mounts or when navigating back
+    // This ensures favorites and ratings stay in sync
+    fetchMerchants();
+  }, [location.key, fetchMerchants]);
 
   const handleCategoryChange = (value: string) => {
     const newParams = new URLSearchParams(searchParams);

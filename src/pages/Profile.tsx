@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Avatar, Button, Form, Input, message, Tabs, List, Rate } from 'antd';
-import { UserOutlined, EditOutlined, HeartOutlined } from '@ant-design/icons';
+import { Card, Avatar, Button, Form, Input, message, Tabs, List, Rate, Upload } from 'antd';
+import { UserOutlined, EditOutlined, HeartOutlined, UploadOutlined, LoadingOutlined } from '@ant-design/icons';
+import type { UploadChangeParam } from 'antd/es/upload';
+import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -25,6 +27,8 @@ const Profile: React.FC = () => {
   const [favorites, setFavorites] = useState<FavoriteMerchant[]>([]);
   const [loadingFavs, setLoadingFavs] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
     if (!user) {
@@ -36,8 +40,9 @@ const Profile: React.FC = () => {
       name: user.name,
       avatar_url: user.avatar_url || ''
     });
+    setAvatarUrl(user.avatar_url || '');
     fetchFavorites();
-  }, [user]);
+  }, [user, navigate, form]);
 
   const fetchFavorites = async () => {
     setLoadingFavs(true);
@@ -53,6 +58,56 @@ const Profile: React.FC = () => {
     }
   };
 
+  const beforeUpload = (file: RcFile) => {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+    if (!isJpgOrPng) {
+      message.error('只允许上传 JPG 或 PNG 格式的图片！');
+    }
+    const isLt5M = file.size / 1024 / 1024 <= 5;
+    if (!isLt5M) {
+      message.error('图片大小必须小于 5MB！');
+    }
+    return isJpgOrPng && isLt5M;
+  };
+
+  const customRequest = async (options: any) => {
+    const { file, onSuccess, onError } = options;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('/api/upload', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${user?.token}`
+        }
+      });
+      onSuccess(response.data);
+    } catch (error) {
+      onError(error);
+      message.error('上传失败');
+    }
+  };
+
+  const handleAvatarChange: UploadProps['onChange'] = (info: UploadChangeParam<UploadFile>) => {
+    if (info.file.status === 'uploading') {
+      setUploadingAvatar(true);
+      return;
+    }
+    if (info.file.status === 'done') {
+      setUploadingAvatar(false);
+      const url = info.file.response?.url;
+      if (url) {
+        setAvatarUrl(url);
+        form.setFieldsValue({ avatar_url: url });
+        message.success('头像上传成功');
+      }
+    } else if (info.file.status === 'error') {
+      setUploadingAvatar(false);
+      message.error('头像上传失败');
+    }
+  };
+
   const handleUpdateProfile = async (values: any) => {
     setUpdating(true);
     try {
@@ -62,11 +117,12 @@ const Profile: React.FC = () => {
       setUser({
         ...user!,
         name: res.data.user.name,
-        avatar_url: res.data.user.avatar_url
+        avatar_url: res.data.user.avatar_url || ''
       });
       message.success('个人信息更新成功');
       setIsEditing(false);
     } catch (error: any) {
+      console.error('Update profile error:', error);
       message.error(error.response?.data?.message || '更新失败');
     } finally {
       setUpdating(false);
@@ -161,7 +217,7 @@ const Profile: React.FC = () => {
             <div className="flex flex-col items-center">
               <Avatar 
                 size={80} 
-                src={user.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${user.name}&backgroundColor=ffd5dc`} 
+                src={user.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.name)}&backgroundColor=ffd5dc`} 
                 icon={<UserOutlined />} 
                 className="mb-4 shadow-md"
               />
@@ -187,14 +243,36 @@ const Profile: React.FC = () => {
                   <Form.Item name="name" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
                     <Input placeholder="输入新用户名" />
                   </Form.Item>
-                  <Form.Item name="avatar_url" label="头像链接">
-                    <Input placeholder="输入头像图片URL" />
+                  <Form.Item name="avatar_url" label="头像" hidden>
+                    <Input />
+                  </Form.Item>
+                  <Form.Item label="头像上传">
+                    <Upload
+                      name="file"
+                      listType="picture-card"
+                      className="avatar-uploader"
+                      showUploadList={false}
+                      beforeUpload={beforeUpload}
+                      customRequest={customRequest}
+                      onChange={handleAvatarChange}
+                      accept=".jpg,.jpeg,.png"
+                    >
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                      ) : (
+                        <div>
+                          {uploadingAvatar ? <LoadingOutlined /> : <UploadOutlined />}
+                          <div style={{ marginTop: 8 }}>点击上传</div>
+                        </div>
+                      )}
+                    </Upload>
+                    <div className="text-gray-400 text-xs mt-1">支持 jpg、png 格式，单张 ≤ 5MB</div>
                   </Form.Item>
                   <div className="flex gap-2 mt-6">
                     <Button type="primary" htmlType="submit" loading={updating} className="flex-1 bg-orange-500 border-none">
                       保存
                     </Button>
-                    <Button onClick={() => { setIsEditing(false); form.resetFields(); }} className="flex-1">
+                    <Button onClick={() => { setIsEditing(false); form.resetFields(); setAvatarUrl(user?.avatar_url || ''); }} className="flex-1">
                       取消
                     </Button>
                   </div>

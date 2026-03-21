@@ -147,10 +147,11 @@ const Home: React.FC = () => {
     return () => window.removeEventListener('resize', update);
   }, [debugWidth, merchants.length, layoutMode]);
 
-  // Refresh data when returning from merchant detail page
+  // Refresh data when returning from other pages (like merchant detail or profile)
   useEffect(() => {
-    // Check if we navigated back from a merchant detail page
-    if (document.referrer && document.referrer.includes('/merchant/')) {
+    // We always want to fetch fresh data when component mounts or when navigating back
+    // This ensures favorites and ratings stay in sync
+    if (activeCategory !== null) {
       fetchData(currentCity, activeCategory);
     }
   }, [location.key]);

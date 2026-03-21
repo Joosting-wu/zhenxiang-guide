@@ -132,7 +132,7 @@ export const getMerchantById = async (req: Request, res: Response) => {
     // To support "show all" easily without another API call right now, let's fetch more if requested, 
     // or just return all and let frontend slice it. For now, returning up to 50 for simplicity.
     const [reviewRows]: any = await pool.execute(
-      'SELECT r.id, u.name as user_name, u.avatar_url, r.content, r.rating, r.created_at, r.reply_content, r.replied_at ' +
+      'SELECT r.id, r.user_id, u.name as user_name, u.avatar_url, r.content, r.rating, r.created_at, r.reply_content, r.replied_at ' +
       'FROM reviews r JOIN users u ON r.user_id = u.id ' +
       'WHERE r.merchant_id = ? ORDER BY r.created_at DESC LIMIT 50',
       [id]
