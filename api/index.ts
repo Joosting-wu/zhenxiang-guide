@@ -4,7 +4,7 @@
 import app from '../server/app.js';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import pool from '../server/lib/db.js';
-import { listSupabaseBuckets } from '../server/lib/storage.js';
+import { getSupabaseStorageDebugInfo, listSupabaseBuckets } from '../server/lib/storage.js';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   // Add a debug health check directly in the handler
@@ -27,12 +27,16 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return (async () => {
       try {
         const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads'
+        const debug = getSupabaseStorageDebugInfo()
         const buckets = await listSupabaseBuckets()
         const exists = buckets.some((b: any) => b?.name === bucket)
         return res.status(200).json({
           ok: true,
           bucket,
           bucket_exists: exists,
+          supabase_url: debug.supabase_url,
+          key_role: debug.key_role,
+          key_ref: debug.key_ref,
           buckets: buckets.map((b: any) => ({ name: b?.name, public: b?.public })),
         })
       } catch (error: any) {

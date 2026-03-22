@@ -13,6 +13,25 @@ const getSupabaseStorageEnv = () => {
   return { normalizedBase, serviceRoleKey }
 }
 
+const base64UrlToUtf8 = (input: string) => {
+  const base64 = input.replace(/-/g, '+').replace(/_/g, '/')
+  const padLen = (4 - (base64.length % 4)) % 4
+  const padded = base64 + '='.repeat(padLen)
+  return Buffer.from(padded, 'base64').toString('utf8')
+}
+
+export const decodeJwtPayload = (jwtToken?: string) => {
+  if (!jwtToken) return undefined
+  const parts = jwtToken.split('.')
+  if (parts.length < 2) return undefined
+  try {
+    const json = base64UrlToUtf8(parts[1])
+    return JSON.parse(json)
+  } catch {
+    return undefined
+  }
+}
+
 export const uploadToSupabaseStorage = async (opts: {
   bucket: string
   path: string
@@ -75,6 +94,16 @@ export const listSupabaseBuckets = async () => {
 
   const json = await res.json().catch(() => [])
   return Array.isArray(json) ? json : []
+}
+
+export const getSupabaseStorageDebugInfo = () => {
+  const { normalizedBase, serviceRoleKey } = getSupabaseStorageEnv()
+  const payload: any = decodeJwtPayload(serviceRoleKey)
+  return {
+    supabase_url: normalizedBase,
+    key_role: payload?.role,
+    key_ref: payload?.ref,
+  }
 }
 
 export const makeUploadKey = (opts: { userId: number; originalName: string }) => {
