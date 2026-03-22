@@ -47,7 +47,7 @@ const upload = multer({
   }
 });
 
-router.post('/', auth, upload.single('file'), (req, res) => {
+router.post('/', auth, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -58,34 +58,26 @@ router.post('/', auth, upload.single('file'), (req, res) => {
     if (isVercel) {
       const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads'
       const key = makeUploadKey({ userId, originalName: req.file.originalname })
-      const urlPromise = uploadToSupabaseStorage({
+      const publicUrl = await uploadToSupabaseStorage({
         bucket,
         path: key,
         contentType: req.file.mimetype,
         data: req.file.buffer,
       })
 
-      urlPromise
-        .then((publicUrl) => {
-          res.status(200).json({ message: 'File uploaded successfully', url: publicUrl })
-        })
-        .catch((error: any) => {
-          res.status(500).json({ message: 'Upload failed', error: error.message })
-        })
-
-      return
+      return res.status(200).json({ message: 'File uploaded successfully', url: publicUrl })
     }
 
     const fileUrl = `/uploads/${req.file.filename}`;
     
     console.log(`[Upload Log] User ${userId} uploaded file: ${req.file.filename}`);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'File uploaded successfully',
       url: fileUrl
     });
   } catch (error: any) {
-    res.status(500).json({ message: 'Upload failed', error: error.message });
+    return res.status(500).json({ message: 'Upload failed', error: error?.message || String(error) });
   }
 });
 

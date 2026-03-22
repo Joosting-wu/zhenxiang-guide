@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
       onSuccess(response.data);
     } catch (error) {
       onError(error);
-      message.error('上传失败');
+      message.error(error?.response?.data?.error || error?.response?.data?.message || '上传失败');
     }
   };
 
