@@ -45,8 +45,10 @@ if (!databaseUrl) {
 }
 
 // Test connection and seed data
-if (pgPool) {
-  pgPool.connect()
+const shouldSeed = !!pgPool && !isVercel && process.env.RUN_DB_SEED !== '0'
+
+if (shouldSeed) {
+  pgPool!.connect()
     .then(async client => {
       console.log('[DB] Successfully connected to PostgreSQL (Supabase)');
       

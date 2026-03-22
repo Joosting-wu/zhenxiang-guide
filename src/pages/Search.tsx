@@ -233,6 +233,8 @@ const Search: React.FC = () => {
                       <img 
                         alt={merchant.name} 
                         src={merchant.image_url || getFallbackImage(merchant.category_name)} 
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-auto max-h-[160px] object-contain"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = getFallbackImage(merchant.category_name);

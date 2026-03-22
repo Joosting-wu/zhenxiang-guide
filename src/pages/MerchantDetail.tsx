@@ -245,6 +245,8 @@ const MerchantDetail: React.FC = () => {
             <img 
               src={(Array.isArray(merchant.images) && merchant.images.length > 0) ? merchant.images[0] : getFallbackImage(merchant.category_name)} 
               alt={merchant.name} 
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover absolute inset-0" 
               onError={(e) => {
                 (e.target as HTMLImageElement).src = getFallbackImage(merchant.category_name);
@@ -336,6 +338,8 @@ const MerchantDetail: React.FC = () => {
                     key={idx} 
                     src={img} 
                     alt={`${merchant.name}-${idx}`} 
+                    loading="lazy"
+                    decoding="async"
                     className="w-20 h-20 object-cover rounded-lg border border-gray-100 cursor-pointer hover:border-orange-500 transition-colors"
                   />
                 ))}

@@ -173,7 +173,7 @@ const Profile: React.FC = () => {
           <List.Item className="bg-white mb-4 rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all">
             <Link to={`/merchant/${item.id}`} className="flex flex-col sm:flex-row w-full gap-4 sm:gap-6 text-gray-800 hover:text-gray-800">
               <div className="w-full sm:w-2/5 h-48 sm:h-48 flex-shrink-0 relative">
-                <img src={imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                <img src={imageUrl} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover rounded-lg" />
               </div>
               <div className="flex-1 sm:w-3/5 flex flex-col justify-between py-1 overflow-hidden">
                 <div>
@@ -269,7 +269,7 @@ const Profile: React.FC = () => {
                       accept=".jpg,.jpeg,.png"
                     >
                       {avatarUrl ? (
-                        <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                        <img src={avatarUrl} alt="avatar" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                       ) : (
                         <div>
                           {uploadingAvatar ? <LoadingOutlined /> : <UploadOutlined />}

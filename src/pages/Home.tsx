@@ -304,6 +304,8 @@ const Home: React.FC = () => {
                   <img 
                     src={merchant.image_url} 
                     alt={merchant.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = getFallbackImage(merchant.category_name);
