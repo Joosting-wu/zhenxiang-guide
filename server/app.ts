@@ -33,10 +33,11 @@ app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
-const uploadDir = isVercel ? '/tmp/uploads' : path.join(__dirname, '../uploads');
+const uploadDir = path.join(__dirname, '../uploads');
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(uploadDir))
+if (!isVercel) {
+  app.use('/uploads', express.static(uploadDir))
+}
 
 app.use('/api', (req: Request, res: Response, next: NextFunction) => {
   res.setHeader('Cache-Control', 'no-store, max-age=0')
