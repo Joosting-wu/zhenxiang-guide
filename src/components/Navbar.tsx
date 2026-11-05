@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Button, Avatar, Dropdown, MenuProps, Space } from 'antd';
+import { Button, Avatar, Dropdown, MenuProps } from 'antd';
 import { UserOutlined, LogoutOutlined, SearchOutlined, EnvironmentOutlined, DownOutlined, ShopOutlined } from '@ant-design/icons';
 
 const cities = ['广州市', '北京市', '上海市', '深圳市', '杭州市'];
@@ -10,12 +10,32 @@ const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [currentCity, setCurrentCity] = useState(localStorage.getItem('currentCity') || '广州市');
+  // 标记本次 currentCity 变更来自外部同步（定位结果），避免重复派发 cityChange 导致重复请求
+  const skipDispatchRef = useRef(false);
 
   useEffect(() => {
     localStorage.setItem('currentCity', currentCity);
+    if (skipDispatchRef.current) {
+      skipDispatchRef.current = false;
+      return;
+    }
     // 触发一个自定义事件，通知其他组件城市已更改
     window.dispatchEvent(new Event('cityChange'));
   }, [currentCity]);
+
+  // 后台定位解析出城市后，同步导航栏显示
+  useEffect(() => {
+    const handleLocationResolved = () => {
+      const stored = localStorage.getItem('currentCity') || '广州市';
+      setCurrentCity(prev => {
+        if (prev === stored) return prev;
+        skipDispatchRef.current = true;
+        return stored;
+      });
+    };
+    window.addEventListener('cityLocationResolved', handleLocationResolved);
+    return () => window.removeEventListener('cityLocationResolved', handleLocationResolved);
+  }, []);
 
   const handleLogout = () => {
     logout();
