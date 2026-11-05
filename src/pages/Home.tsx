@@ -345,9 +345,10 @@ const Home: React.FC = () => {
       if (opts.initial) setLocationStatus(`已为你推荐 ${city} 的热门商户`);
     } else {
       // 返回空数组也保留 fallback，绝不出现空白推荐区
+      // 兜底卡片固定为广州数据，故文案不带城市名，避免出现"北京 + 广州店"的错位
       setMerchants(buildFallback());
       setIsFallback(true);
-      if (opts.initial) setLocationStatus(`为你推荐 ${city} 的热门精选`);
+      if (opts.initial) setLocationStatus('为你推荐热门精选');
     }
 
     setIsRefreshing(false);
